@@ -15,8 +15,8 @@ client = Client(api_key, api_secret)
 symbol = "BTCUSDT"
 
 # Especifica las fechas de inicio y fin (formato: "DD MM YYYY")
-start_date = "1 Dec 2023"
-end_date = "26 Dec 2023"
+start_date = "17 Dec 2023"
+end_date = "19 Dec 2023"
 
 # Convierte las fechas a milisegundos desde la época
 start_date = int(datetime.strptime(start_date, "%d %b %Y").timestamp() * 1000)
@@ -30,12 +30,16 @@ trades = []
 for i in range(num_days + 1):
     day_start = start_date + i * 24 * 60 * 60 * 1000
     day_end = day_start + 24 * 60 * 60 * 1000
-    day_trades = client.get_my_trades(symbol=symbol, startTime=day_start, endTime=day_end, limit=5000)
+    day_trades = client.get_my_trades(symbol=symbol, startTime=day_start, endTime=day_end, limit=1000)
     trades.extend(day_trades)
 
 # Inicializa las sumas de los valores netos de compra y venta
 total_buy_value = 0
 total_sell_value = 0
+
+# Inicializa las sumas de los precios de compra y venta
+total_buy_price = 0
+total_sell_price = 0
 
 # Inicializa los contadores de operaciones de compra y venta
 buy_counter = 0
@@ -54,11 +58,17 @@ for trade in trades:
     if trade['isBuyer']:
         buy_counter += 1
         total_buy_value += float(price) * float(trade['qty'])
+        total_buy_price += float(price)
         buy_trades.append([trade['id'], price, trade['qty'], float(price) * float(trade['qty']), total_buy_value, buy_counter, timestamp])
     else:
         sell_counter += 1
         total_sell_value += float(price) * float(trade['qty'])
+        total_sell_price += float(price)
         sell_trades.append([trade['id'], price, trade['qty'], float(price) * float(trade['qty']), total_sell_value, sell_counter, timestamp])
+
+# Calcula los precios promedio de compra y venta
+avg_buy_price = total_buy_price / buy_counter if buy_counter > 0 else 0
+avg_sell_price = total_sell_price / sell_counter if sell_counter > 0 else 0
 
 # Escribe los datos en un archivo CSV
 with open(f'{symbol}_trades.csv', 'w', newline='') as file:
@@ -77,3 +87,8 @@ with open(f'{symbol}_trades.csv', 'w', newline='') as file:
         else:
             row.extend(['', '', '', '', '', '', ''])
         writer.writerow(row)
+
+    # Escribe los precios promedio de compra y venta
+    writer.writerow(["", "", "", "", "", "", "", "", "", "", "", "", "", ""])
+    writer.writerow(["", "Precio Promedio de Compra", "", "", "", "", "", "", "Precio Promedio de Venta", "", "", "", "", ""])
+    writer.writerow(["", avg_buy_price, "", "", "", "", "", "", avg_sell_price, "", "", "", "", ""])
