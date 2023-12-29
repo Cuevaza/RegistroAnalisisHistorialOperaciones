@@ -15,15 +15,23 @@ client = Client(api_key, api_secret)
 symbol = "BTCUSDT"
 
 # Especifica las fechas de inicio y fin (formato: "DD MM YYYY")
-start_date = "18 Dec 2023"
+start_date = "15 Dec 2023"
 end_date = "19 Dec 2023"
 
 # Convierte las fechas a milisegundos desde la época
 start_date = int(datetime.strptime(start_date, "%d %b %Y").timestamp() * 1000)
 end_date = int(datetime.strptime(end_date, "%d %b %Y").timestamp() * 1000)
 
-# Obtiene el historial de operaciones
-trades = client.get_my_trades(symbol=symbol, startTime=start_date, endTime=end_date, limit=1000)
+# Calcula el número de días entre las fechas de inicio y fin
+num_days = (end_date - start_date) // (24 * 60 * 60 * 1000)
+
+# Obtiene el historial de operaciones para cada día
+trades = []
+for i in range(num_days + 1):
+    day_start = start_date + i * 24 * 60 * 60 * 1000
+    day_end = day_start + 24 * 60 * 60 * 1000
+    day_trades = client.get_my_trades(symbol=symbol, startTime=day_start, endTime=day_end, limit=1000)
+    trades.extend(day_trades)
 
 # Inicializa las sumas de los valores netos de compra y venta
 total_buy_value = 0
